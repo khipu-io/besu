@@ -156,6 +156,7 @@ public class ProtocolScheduleBuilder {
             chainId,
             config.getContractSizeLimit(),
             config.getEvmStackSize(),
+            config.getContractAllowedCodes(),
             isRevertReasonEnabled));
     addProtocolSpec(
         protocolSchedule,
@@ -164,6 +165,7 @@ public class ProtocolScheduleBuilder {
             chainId,
             config.getContractSizeLimit(),
             config.getEvmStackSize(),
+            config.getContractAllowedCodes(),
             isRevertReasonEnabled));
 
     if (ExperimentalEIPs.berlinEnabled) {
@@ -174,6 +176,7 @@ public class ProtocolScheduleBuilder {
               chainId,
               config.getContractSizeLimit(),
               config.getEvmStackSize(),
+              config.getContractAllowedCodes(),
               isRevertReasonEnabled));
     }
 
@@ -188,6 +191,7 @@ public class ProtocolScheduleBuilder {
               transactionPriceCalculator,
               config.getContractSizeLimit(),
               config.getEvmStackSize(),
+              config.getContractAllowedCodes(),
               isRevertReasonEnabled,
               config));
 
@@ -203,6 +207,7 @@ public class ProtocolScheduleBuilder {
               transactionPriceCalculator,
               config.getContractSizeLimit(),
               config.getEvmStackSize(),
+              config.getContractAllowedCodes(),
               isRevertReasonEnabled,
               config));
     }

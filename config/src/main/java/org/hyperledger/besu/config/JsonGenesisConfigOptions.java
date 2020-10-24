@@ -21,6 +21,8 @@ import org.hyperledger.besu.config.experimental.ExperimentalEIPs;
 
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -28,6 +30,8 @@ import java.util.OptionalLong;
 import java.util.TreeMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 
@@ -384,5 +388,33 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
     } else {
       return JsonUtil.getValueAsString(configRoot, key).map(s -> new BigInteger(s, 10));
     }
+  }
+
+  @Override
+  public Map<Long, List<String>> getContractAllowedCodes() {
+    return JsonUtil.getArrayNode(configRoot, "contractallowed")
+        .map(
+            s -> {
+              int size = s.size();
+              Map<Long, List<String>> map = new HashMap<Long, List<String>>();
+              for (int i = 0; i < size; i++) {
+                JsonNode node = s.get(i);
+                JsonNode blockNode = node.get("block");
+                if (blockNode != null) {
+                  long blockNumber = blockNode.asLong();
+                  ArrayNode codesNode = (ArrayNode) node.get("codes");
+                  if (codesNode != null) {
+                    int codesSize = codesNode.size();
+                    String[] xs = new String[codesSize];
+                    for (int k = 0; k < codesSize; k++) {
+                      xs[k] = codesNode.get(k).asText();
+                    }
+                    map.put(blockNumber, List.of(xs));
+                  }
+                }
+              }
+              return map;
+            })
+        .orElse(Collections.emptyMap());
   }
 }

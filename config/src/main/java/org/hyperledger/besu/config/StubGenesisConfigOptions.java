@@ -17,6 +17,8 @@ package org.hyperledger.besu.config;
 import org.hyperledger.besu.config.experimental.ExperimentalEIPs;
 
 import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -50,6 +52,7 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions {
   private OptionalInt contractSizeLimit = OptionalInt.empty();
   private OptionalInt stackSizeLimit = OptionalInt.empty();
   private final OptionalLong ecip1017EraRounds = OptionalLong.empty();
+  private Map<Long, List<String>> contractAllowed = Collections.emptyMap();
 
   @Override
   public String getConsensusEngine() {
@@ -323,5 +326,16 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions {
   public StubGenesisConfigOptions stackSizeLimit(final int stackSizeLimit) {
     this.stackSizeLimit = OptionalInt.of(stackSizeLimit);
     return this;
+  }
+
+  public StubGenesisConfigOptions contractAllowedCodes(
+      final Map<Long, List<String>> contractAllowed) {
+    this.contractAllowed = contractAllowed;
+    return this;
+  }
+
+  @Override
+  public Map<Long, List<String>> getContractAllowedCodes() {
+    return contractAllowed;
   }
 }

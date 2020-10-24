@@ -15,6 +15,7 @@
 package org.hyperledger.besu.config;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -175,4 +176,6 @@ public interface GenesisConfigOptions {
   Map<String, Object> asMap();
 
   TransitionsConfigOptions getTransitions();
+
+  Map<Long, List<String>> getContractAllowedCodes();
 }

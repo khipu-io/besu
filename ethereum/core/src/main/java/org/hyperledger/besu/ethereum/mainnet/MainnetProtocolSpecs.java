@@ -33,6 +33,7 @@ import org.hyperledger.besu.ethereum.core.fees.CoinbaseFeePriceCalculator;
 import org.hyperledger.besu.ethereum.core.fees.EIP1559;
 import org.hyperledger.besu.ethereum.core.fees.TransactionGasBudgetCalculator;
 import org.hyperledger.besu.ethereum.core.fees.TransactionPriceCalculator;
+import org.hyperledger.besu.ethereum.mainnet.contractvalidation.AllowedCodesRule;
 import org.hyperledger.besu.ethereum.mainnet.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.ethereum.privacy.PrivateTransactionProcessor;
 import org.hyperledger.besu.ethereum.privacy.PrivateTransactionValidator;
@@ -44,6 +45,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
@@ -306,6 +308,7 @@ public abstract class MainnetProtocolSpecs {
       final Optional<BigInteger> chainId,
       final OptionalInt configContractSizeLimit,
       final OptionalInt configStackSizeLimit,
+      final Map<Long, List<String>> configContractAllowed,
       final boolean enableRevertReason) {
     final int contractSizeLimit =
         configContractSizeLimit.orElse(SPURIOUS_DRAGON_CONTRACT_SIZE_LIMIT);
@@ -322,7 +325,9 @@ public abstract class MainnetProtocolSpecs {
                     gasCalculator,
                     evm,
                     true,
-                    Collections.singletonList(MaxCodeSizeRule.of(contractSizeLimit)),
+                    List.of(
+                        MaxCodeSizeRule.of(contractSizeLimit),
+                        AllowedCodesRule.of(configContractAllowed)),
                     1,
                     SPURIOUS_DRAGON_FORCE_DELETE_WHEN_EMPTY_ADDRESSES))
         .name("Istanbul");
@@ -332,8 +337,14 @@ public abstract class MainnetProtocolSpecs {
       final Optional<BigInteger> chainId,
       final OptionalInt contractSizeLimit,
       final OptionalInt configStackSizeLimit,
+      final Map<Long, List<String>> configContractAllowed,
       final boolean enableRevertReason) {
-    return istanbulDefinition(chainId, contractSizeLimit, configStackSizeLimit, enableRevertReason)
+    return istanbulDefinition(
+            chainId,
+            contractSizeLimit,
+            configStackSizeLimit,
+            configContractAllowed,
+            enableRevertReason)
         .difficultyCalculator(MainnetDifficultyCalculators.MUIR_GLACIER)
         .name("MuirGlacier");
   }
@@ -342,12 +353,17 @@ public abstract class MainnetProtocolSpecs {
       final Optional<BigInteger> chainId,
       final OptionalInt contractSizeLimit,
       final OptionalInt configStackSizeLimit,
+      final Map<Long, List<String>> configContractAllowed,
       final boolean enableRevertReason) {
     if (!ExperimentalEIPs.berlinEnabled) {
       throw new RuntimeException("Berlin feature flag must be enabled --Xberlin-enabled");
     }
     return muirGlacierDefinition(
-            chainId, contractSizeLimit, configStackSizeLimit, enableRevertReason)
+            chainId,
+            contractSizeLimit,
+            configStackSizeLimit,
+            configContractAllowed,
+            enableRevertReason)
         .gasCalculator(BerlinGasCalculator::new)
         .evmBuilder(
             gasCalculator ->
@@ -362,13 +378,18 @@ public abstract class MainnetProtocolSpecs {
       final Optional<TransactionPriceCalculator> transactionPriceCalculator,
       final OptionalInt contractSizeLimit,
       final OptionalInt configStackSizeLimit,
+      final Map<Long, List<String>> configContractAllowed,
       final boolean enableRevertReason,
       final GenesisConfigOptions genesisConfigOptions) {
     ExperimentalEIPs.eip1559MustBeEnabled();
     final int stackSizeLimit = configStackSizeLimit.orElse(MessageFrame.DEFAULT_MAX_STACK_SIZE);
     final EIP1559 eip1559 = new EIP1559(genesisConfigOptions.getEIP1559BlockNumber().orElse(0));
     return muirGlacierDefinition(
-            chainId, contractSizeLimit, configStackSizeLimit, enableRevertReason)
+            chainId,
+            contractSizeLimit,
+            configStackSizeLimit,
+            configContractAllowed,
+            enableRevertReason)
         .transactionValidatorBuilder(
             gasCalculator ->
                 new MainnetTransactionValidator(
@@ -408,6 +429,7 @@ public abstract class MainnetProtocolSpecs {
       final Optional<TransactionPriceCalculator> transactionPriceCalculator,
       final OptionalInt contractSizeLimit,
       final OptionalInt configStackSizeLimit,
+      final Map<Long, List<String>> configContractAllowed,
       final boolean enableRevertReason,
       final GenesisConfigOptions genesisConfigOptions) {
     return eip1559Definition(
@@ -415,6 +437,7 @@ public abstract class MainnetProtocolSpecs {
             transactionPriceCalculator,
             contractSizeLimit,
             configStackSizeLimit,
+            configContractAllowed,
             enableRevertReason,
             genesisConfigOptions)
         .transactionValidatorBuilder(
