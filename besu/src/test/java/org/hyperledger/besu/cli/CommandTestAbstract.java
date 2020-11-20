@@ -46,6 +46,7 @@ import org.hyperledger.besu.ethereum.api.graphql.GraphQLConfiguration;
 import org.hyperledger.besu.ethereum.api.jsonrpc.JsonRpcConfiguration;
 import org.hyperledger.besu.ethereum.api.jsonrpc.websocket.WebSocketConfiguration;
 import org.hyperledger.besu.ethereum.chain.Blockchain;
+import org.hyperledger.besu.ethereum.eth.EthProtocolConfiguration;
 import org.hyperledger.besu.ethereum.eth.manager.EthProtocolManager;
 import org.hyperledger.besu.ethereum.eth.sync.BlockBroadcaster;
 import org.hyperledger.besu.ethereum.eth.sync.SynchronizerConfiguration;
@@ -155,6 +156,7 @@ public abstract class CommandTestAbstract {
   @Captor protected ArgumentCaptor<WebSocketConfiguration> wsRpcConfigArgumentCaptor;
   @Captor protected ArgumentCaptor<MetricsConfiguration> metricsConfigArgumentCaptor;
   @Captor protected ArgumentCaptor<StorageProvider> storageProviderArgumentCaptor;
+  @Captor protected ArgumentCaptor<EthProtocolConfiguration> ethProtocolConfigurationArgumentCaptor;
 
   @Captor
   protected ArgumentCaptor<PermissioningConfiguration> permissioningConfigurationArgumentCaptor;
@@ -213,6 +215,7 @@ public abstract class CommandTestAbstract {
         .thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.fractionRemoteConnectionsAllowed(anyFloat()))
         .thenReturn(mockRunnerBuilder);
+    when(mockRunnerBuilder.randomPeerPriority(anyBoolean())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.p2pEnabled(anyBoolean())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.natMethod(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.natManagerServiceName(any())).thenReturn(mockRunnerBuilder);
@@ -220,6 +223,7 @@ public abstract class CommandTestAbstract {
     when(mockRunnerBuilder.jsonRpcConfiguration(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.graphQLConfiguration(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.webSocketConfiguration(any())).thenReturn(mockRunnerBuilder);
+    when(mockRunnerBuilder.apiConfiguration(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.dataDir(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.bannedNodeIds(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.metricsSystem(any())).thenReturn(mockRunnerBuilder);

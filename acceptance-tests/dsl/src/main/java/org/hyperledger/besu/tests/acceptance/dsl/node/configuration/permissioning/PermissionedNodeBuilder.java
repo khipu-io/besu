@@ -67,6 +67,7 @@ public class PermissionedNodeBuilder {
 
   private boolean nodeSmartContractPermissioningEnabled = false;
   private String nodePermissioningSmartContractAddress = null;
+  private int nodePermissioningSmartContractInterfaceVersion = 1;
 
   private boolean accountSmartContractPermissioningEnabled = false;
   private String accountPermissioningSmartContractAddress = null;
@@ -130,6 +131,13 @@ public class PermissionedNodeBuilder {
     return this;
   }
 
+  public PermissionedNodeBuilder nodesContractV2Enabled(final String address) {
+    this.nodeSmartContractPermissioningEnabled = true;
+    this.nodePermissioningSmartContractAddress = address;
+    this.nodePermissioningSmartContractInterfaceVersion = 2;
+    return this;
+  }
+
   public PermissionedNodeBuilder accountsContractEnabled(final String address) {
     this.accountSmartContractPermissioningEnabled = true;
     this.accountPermissioningSmartContractAddress = address;
@@ -178,7 +186,7 @@ public class PermissionedNodeBuilder {
     }
 
     final PermissioningConfiguration permissioningConfiguration =
-        new PermissioningConfiguration(localPermConfig, smartContractPermConfig);
+        new PermissioningConfiguration(localPermConfig, smartContractPermConfig, Optional.empty());
 
     final BesuNodeConfigurationBuilder builder = new BesuNodeConfigurationBuilder();
     builder
@@ -263,6 +271,8 @@ public class PermissionedNodeBuilder {
           Address.fromHexString(accountPermissioningSmartContractAddress));
       config.setSmartContractAccountAllowlistEnabled(true);
     }
+
+    config.setNodeSmartContractInterfaceVersion(nodePermissioningSmartContractInterfaceVersion);
 
     return config;
   }

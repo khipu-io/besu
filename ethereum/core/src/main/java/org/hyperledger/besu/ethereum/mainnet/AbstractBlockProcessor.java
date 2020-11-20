@@ -14,7 +14,6 @@
  */
 package org.hyperledger.besu.ethereum.mainnet;
 
-import org.hyperledger.besu.config.experimental.ExperimentalEIPs;
 import org.hyperledger.besu.ethereum.chain.Blockchain;
 import org.hyperledger.besu.ethereum.core.Address;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
@@ -26,6 +25,7 @@ import org.hyperledger.besu.ethereum.core.WorldState;
 import org.hyperledger.besu.ethereum.core.WorldUpdater;
 import org.hyperledger.besu.ethereum.core.fees.TransactionGasBudgetCalculator;
 import org.hyperledger.besu.ethereum.privacy.storage.PrivateMetadataUpdater;
+import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.ethereum.vm.BlockHashLookup;
 import org.hyperledger.besu.ethereum.vm.OperationTracer;
 
@@ -41,7 +41,7 @@ public abstract class AbstractBlockProcessor implements BlockProcessor {
   public interface TransactionReceiptFactory {
 
     TransactionReceipt create(
-        TransactionProcessor.Result result, WorldState worldState, long gasUsed);
+        TransactionProcessingResult result, WorldState worldState, long gasUsed);
   }
 
   private static final Logger LOG = LogManager.getLogger();
@@ -82,7 +82,7 @@ public abstract class AbstractBlockProcessor implements BlockProcessor {
     }
   }
 
-  private final TransactionProcessor transactionProcessor;
+  private final MainnetTransactionProcessor transactionProcessor;
 
   private final AbstractBlockProcessor.TransactionReceiptFactory transactionReceiptFactory;
 
@@ -95,7 +95,7 @@ public abstract class AbstractBlockProcessor implements BlockProcessor {
   private final TransactionGasBudgetCalculator gasBudgetCalculator;
 
   protected AbstractBlockProcessor(
-      final TransactionProcessor transactionProcessor,
+      final MainnetTransactionProcessor transactionProcessor,
       final TransactionReceiptFactory transactionReceiptFactory,
       final Wei blockReward,
       final MiningBeneficiaryCalculator miningBeneficiaryCalculator,
@@ -118,22 +118,15 @@ public abstract class AbstractBlockProcessor implements BlockProcessor {
       final List<BlockHeader> ommers,
       final PrivateMetadataUpdater privateMetadataUpdater) {
 
-    long legacyGasUsed = 0;
-    long eip1556GasUsed = 0;
     final List<TransactionReceipt> receipts = new ArrayList<>();
-
+    long currentGasUsed = 0;
     for (final Transaction transaction : transactions) {
-      long currentGasUsed;
-      if (ExperimentalEIPs.eip1559Enabled && transaction.isEIP1559Transaction()) {
-        currentGasUsed = eip1556GasUsed;
-      } else {
-        currentGasUsed = legacyGasUsed;
-      }
       final long remainingGasBudget = blockHeader.getGasLimit() - currentGasUsed;
       if (!gasBudgetCalculator.hasBudget(
           transaction, blockHeader.getNumber(), blockHeader.getGasLimit(), currentGasUsed)) {
         LOG.info(
-            "Block processing error: transaction gas limit {} exceeds available block budget remaining {}. Block {} Transaction {}",
+            "Block processing error: transaction gas limit {} exceeds available block budget"
+                + " remaining {}. Block {} Transaction {}",
             transaction.getGasLimit(),
             remainingGasBudget,
             blockHeader.getHash().toHexString(),
@@ -146,7 +139,7 @@ public abstract class AbstractBlockProcessor implements BlockProcessor {
       final Address miningBeneficiary =
           miningBeneficiaryCalculator.calculateBeneficiary(blockHeader);
 
-      final TransactionProcessor.Result result =
+      final TransactionProcessingResult result =
           transactionProcessor.processTransaction(
               blockchain,
               worldStateUpdater,
@@ -169,16 +162,10 @@ public abstract class AbstractBlockProcessor implements BlockProcessor {
 
       worldStateUpdater.commit();
 
-      currentGasUsed = transaction.getGasLimit() - result.getGasRemaining() + currentGasUsed;
-
-      if (ExperimentalEIPs.eip1559Enabled && transaction.isEIP1559Transaction()) {
-        eip1556GasUsed = currentGasUsed;
-      } else {
-        legacyGasUsed = currentGasUsed;
-      }
+      currentGasUsed += transaction.getGasLimit() - result.getGasRemaining();
 
       final TransactionReceipt transactionReceipt =
-          transactionReceiptFactory.create(result, worldState, legacyGasUsed + eip1556GasUsed);
+          transactionReceiptFactory.create(result, worldState, currentGasUsed);
       receipts.add(transactionReceipt);
     }
 

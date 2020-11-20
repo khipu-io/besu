@@ -24,8 +24,9 @@ import org.hyperledger.besu.ethereum.core.Address;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.Hash;
 import org.hyperledger.besu.ethereum.core.Transaction;
+import org.hyperledger.besu.ethereum.core.Wei;
 import org.hyperledger.besu.ethereum.core.fees.EIP1559;
-import org.hyperledger.besu.ethereum.mainnet.TransactionValidator.TransactionInvalidReason;
+import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 import org.hyperledger.besu.metrics.BesuMetricCategory;
 import org.hyperledger.besu.plugin.services.MetricsSystem;
 import org.hyperledger.besu.plugin.services.metrics.Counter;
@@ -37,7 +38,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -71,6 +71,7 @@ public class PendingTransactions {
   private final NavigableSet<TransactionInfo> prioritizedTransactions =
       new TreeSet<>(
           comparing(TransactionInfo::isReceivedFromLocalSource)
+              .thenComparing(TransactionInfo::getGasPrice)
               .thenComparing(TransactionInfo::getSequence)
               .reversed());
   private final Map<Address, TransactionsForSenderInfo> transactionsBySender =
@@ -271,8 +272,9 @@ public class PendingTransactions {
     final TransactionInfo existingTransaction =
         getTrackedTransactionBySenderAndNonce(transactionInfo);
     if (existingTransaction != null) {
-      if (!transactionReplacementHandler.shouldReplace(
-          existingTransaction, transactionInfo, chainHeadHeaderSupplier.get())) {
+      if (existingTransaction.transaction.isFrontierTransaction()
+          && !transactionReplacementHandler.shouldReplace(
+              existingTransaction, transactionInfo, chainHeadHeaderSupplier.get())) {
         return REJECTED_UNDERPRICED_REPLACEMENT;
       }
       removeTransaction(existingTransaction.getTransaction());
@@ -372,8 +374,10 @@ public class PendingTransactions {
     }
   }
 
-  Collection<Hash> getNewPooledHashes() {
-    return newPooledHashes;
+  List<Hash> getNewPooledHashes() {
+    synchronized (newPooledHashes) {
+      return List.copyOf(newPooledHashes);
+    }
   }
 
   /**
@@ -400,6 +404,10 @@ public class PendingTransactions {
 
     public Transaction getTransaction() {
       return transaction;
+    }
+
+    public Wei getGasPrice() {
+      return transaction.getGasPrice();
     }
 
     public long getSequence() {

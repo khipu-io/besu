@@ -39,7 +39,9 @@ p2p-port=1234
 max-peers=42
 remote-connections-limit-enabled=true
 remote-connections-max-percentage=60
+random-peer-priority-enabled=false
 host-whitelist=["all"]
+host-allowlist=["all"]
 required-blocks=["8675309=123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"]
 
 # chain
@@ -88,8 +90,14 @@ rpc-ws-authentication-enabled=false
 rpc-ws-authentication-credentials-file="none"
 rpc-ws-authentication-jwt-public-key-file="none"
 
+# API
+api-gas-price-blocks=100
+api-gas-price-percentile=50.0
+api-gas-price-max=500000000000
+
 # Prometheus Metrics Endpoint
 metrics-enabled=false
+metrics-protocol="prometheus"
 metrics-host="8.6.7.5"
 metrics-port=309
 metrics-category=["RPC"]
@@ -122,6 +130,7 @@ permissions-accounts-config-file-enabled=false
 permissions-accounts-config-file="./permissions_config.toml"
 permissions-nodes-contract-enabled=false
 permissions-nodes-contract-address="0x0000000000000000000000000000000000001234"
+permissions-nodes-contract-version=1
 permissions-accounts-contract-enabled=false
 permissions-accounts-contract-address="0x0000000000000000000000000000000000006789"
 
@@ -162,3 +171,6 @@ Xethstats-contact="contact@mail.n"
 # feature flags
 Xsecp256k1-native-enabled=false
 Xaltbn128-native-enabled=false
+
+# compatibility flags
+compatibility-eth64-forkid-enabled=false

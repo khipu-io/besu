@@ -20,9 +20,10 @@ import org.hyperledger.besu.enclave.types.ReceiveResponse;
 import org.hyperledger.besu.ethereum.core.Address;
 import org.hyperledger.besu.ethereum.core.Hash;
 import org.hyperledger.besu.ethereum.core.Transaction;
-import org.hyperledger.besu.ethereum.mainnet.TransactionValidator.TransactionInvalidReason;
 import org.hyperledger.besu.ethereum.mainnet.ValidationResult;
+import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.ethereum.transaction.CallParameter;
+import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -129,18 +130,18 @@ public class MultiTenancyPrivacyController implements PrivacyController {
 
   @Override
   public Transaction createPrivacyMarkerTransaction(
-      final String transactionEnclaveKey, final PrivateTransaction privateTransaction) {
+      final String privateTransactionLookupId, final PrivateTransaction privateTransaction) {
     return privacyController.createPrivacyMarkerTransaction(
-        transactionEnclaveKey, privateTransaction);
+        privateTransactionLookupId, privateTransaction);
   }
 
   @Override
   public Transaction createPrivacyMarkerTransaction(
-      final String transactionEnclaveKey,
+      final String privateTransactionLookupId,
       final PrivateTransaction privateTransaction,
       final Address privacyPrecompileAddress) {
     return privacyController.createPrivacyMarkerTransaction(
-        transactionEnclaveKey, privateTransaction, privacyPrecompileAddress);
+        privateTransactionLookupId, privateTransaction, privacyPrecompileAddress);
   }
 
   @Override
@@ -172,7 +173,7 @@ public class MultiTenancyPrivacyController implements PrivacyController {
   }
 
   @Override
-  public Optional<PrivateTransactionProcessor.Result> simulatePrivateTransaction(
+  public Optional<TransactionProcessingResult> simulatePrivateTransaction(
       final String privacyGroupId,
       final String enclavePublicKey,
       final CallParameter callParams,

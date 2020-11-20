@@ -72,7 +72,8 @@ public class CliqueProtocolSchedule {
                     builder,
                     eip1559),
             privacyParameters,
-            isRevertReasonEnabled)
+            isRevertReasonEnabled,
+            config.isQuorum())
         .createProtocolSchedule();
   }
 
@@ -109,12 +110,7 @@ public class CliqueProtocolSchedule {
       final EpochManager epochManager,
       final long secondsBetweenBlocks,
       final Optional<EIP1559> eip1559) {
-    if (ExperimentalEIPs.eip1559Enabled && eip1559.isPresent()) {
-      return BlockHeaderValidationRulesetFactory.cliqueEip1559BlockHeaderValidator(
-          secondsBetweenBlocks, epochManager, eip1559.get());
-    } else {
-      return BlockHeaderValidationRulesetFactory.cliqueBlockHeaderValidator(
-          secondsBetweenBlocks, epochManager);
-    }
+    return BlockHeaderValidationRulesetFactory.cliqueBlockHeaderValidator(
+        secondsBetweenBlocks, epochManager, eip1559);
   }
 }

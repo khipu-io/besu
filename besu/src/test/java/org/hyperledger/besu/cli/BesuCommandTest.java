@@ -120,6 +120,8 @@ public class BesuCommandTest extends CommandTestAbstract {
           .put("config", (new JsonObject()).put("chainId", GENESIS_CONFIG_TEST_CHAINID));
   private static final JsonObject GENESIS_INVALID_DATA =
       (new JsonObject()).put("config", new JsonObject());
+  private static final JsonObject GENESIS_QUORUM_INTEROP_ENABLED =
+      (new JsonObject()).put("config", new JsonObject().put("isquorum", true));
   private static final String ENCLAVE_PUBLIC_KEY_PATH =
       BesuCommand.class.getResource("/orion_publickey.pub").getPath();
 
@@ -421,6 +423,60 @@ public class BesuCommandTest extends CommandTestAbstract {
     final PermissioningConfiguration config = permissioningConfigurationArgumentCaptor.getValue();
     assertThat(config.getSmartContractConfig().get())
         .isEqualToComparingFieldByField(smartContractPermissioningConfiguration);
+
+    assertThat(commandErrorOutput.toString()).isEmpty();
+    assertThat(commandOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void nodePermissionsContractVersionDefaultValue() {
+    final SmartContractPermissioningConfiguration expectedConfig =
+        new SmartContractPermissioningConfiguration();
+    expectedConfig.setNodeSmartContractAddress(
+        Address.fromHexString("0x0000000000000000000000000000000000001234"));
+    expectedConfig.setSmartContractNodeAllowlistEnabled(true);
+    expectedConfig.setNodeSmartContractInterfaceVersion(1);
+
+    parseCommand(
+        "--permissions-nodes-contract-enabled",
+        "--permissions-nodes-contract-address",
+        "0x0000000000000000000000000000000000001234");
+
+    verify(mockRunnerBuilder)
+        .permissioningConfiguration(permissioningConfigurationArgumentCaptor.capture());
+    verify(mockRunnerBuilder).build();
+
+    final PermissioningConfiguration config = permissioningConfigurationArgumentCaptor.getValue();
+    assertThat(config.getSmartContractConfig().get())
+        .isEqualToComparingFieldByField(expectedConfig);
+
+    assertThat(commandErrorOutput.toString()).isEmpty();
+    assertThat(commandOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void nodePermissionsContractVersionSetsValue() {
+    final SmartContractPermissioningConfiguration expectedConfig =
+        new SmartContractPermissioningConfiguration();
+    expectedConfig.setNodeSmartContractAddress(
+        Address.fromHexString("0x0000000000000000000000000000000000001234"));
+    expectedConfig.setSmartContractNodeAllowlistEnabled(true);
+    expectedConfig.setNodeSmartContractInterfaceVersion(2);
+
+    parseCommand(
+        "--permissions-nodes-contract-enabled",
+        "--permissions-nodes-contract-address",
+        "0x0000000000000000000000000000000000001234",
+        "--permissions-nodes-contract-version",
+        "2");
+
+    verify(mockRunnerBuilder)
+        .permissioningConfiguration(permissioningConfigurationArgumentCaptor.capture());
+    verify(mockRunnerBuilder).build();
+
+    final PermissioningConfiguration config = permissioningConfigurationArgumentCaptor.getValue();
+    assertThat(config.getSmartContractConfig().get())
+        .isEqualToComparingFieldByField(expectedConfig);
 
     assertThat(commandErrorOutput.toString()).isEmpty();
     assertThat(commandOutput.toString()).isEmpty();
@@ -1225,6 +1281,22 @@ public class BesuCommandTest extends CommandTestAbstract {
   }
 
   @Test
+  public void enableRandomConnectionPrioritization() {
+    parseCommand("--random-peer-priority-enabled");
+    verify(mockRunnerBuilder).randomPeerPriority(eq(true));
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void randomConnectionPrioritizationDisabledByDefault() {
+    parseCommand();
+    verify(mockRunnerBuilder).randomPeerPriority(eq(false));
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
   public void syncMode_fast() {
     parseCommand("--sync-mode", "FAST");
     verify(mockControllerBuilder).synchronizerConfiguration(syncConfigurationCaptor.capture());
@@ -1267,6 +1339,8 @@ public class BesuCommandTest extends CommandTestAbstract {
     Mockito.verifyZeroInteractions(mockRunnerBuilder);
 
     assertThat(commandOutput.toString()).contains("--fast-sync-min-peers");
+    // whitelist is now a hidden option
+    assertThat(commandOutput.toString()).doesNotContain("whitelist");
     assertThat(commandErrorOutput.toString()).isEmpty();
   }
 
@@ -3130,6 +3204,29 @@ public class BesuCommandTest extends CommandTestAbstract {
   }
 
   @Test
+  public void flexiblePrivacyGroupEnabledFlagValueIsSet() {
+    parseCommand(
+        "--privacy-enabled",
+        "--privacy-public-key-file",
+        ENCLAVE_PUBLIC_KEY_PATH,
+        "--privacy-flexible-groups-enabled",
+        "--min-gas-price",
+        "0");
+
+    final ArgumentCaptor<PrivacyParameters> privacyParametersArgumentCaptor =
+        ArgumentCaptor.forClass(PrivacyParameters.class);
+
+    verify(mockControllerBuilder).privacyParameters(privacyParametersArgumentCaptor.capture());
+    verify(mockControllerBuilder).build();
+
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString()).isEmpty();
+
+    final PrivacyParameters privacyParameters = privacyParametersArgumentCaptor.getValue();
+    assertThat(privacyParameters.isOnchainPrivacyGroupsEnabled()).isEqualTo(true);
+  }
+
+  @Test
   public void privacyMarkerTransactionSigningKeyFileRequiredIfMinGasPriceNonZero() {
     parseCommand("--privacy-enabled", "--privacy-public-key-file", ENCLAVE_PUBLIC_KEY_PATH);
 
@@ -3692,6 +3789,74 @@ public class BesuCommandTest extends CommandTestAbstract {
         "--metrics-port=13",
         "--metrics-push-port=14",
         "--miner-stratum-port=15");
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void compatibilityEth64ForkIdEnabledMustBeUsed() {
+    parseCommand("--compatibility-eth64-forkid-enabled");
+    verify(mockControllerBuilder)
+        .ethProtocolConfiguration(ethProtocolConfigurationArgumentCaptor.capture());
+    assertThat(ethProtocolConfigurationArgumentCaptor.getValue().isLegacyEth64ForkIdEnabled())
+        .isTrue();
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void compatibilityEth64ForkIdNotEnabledMustBeUsed() {
+    parseCommand("--compatibility-eth64-forkid-enabled=false");
+    verify(mockControllerBuilder)
+        .ethProtocolConfiguration(ethProtocolConfigurationArgumentCaptor.capture());
+    assertThat(ethProtocolConfigurationArgumentCaptor.getValue().isLegacyEth64ForkIdEnabled())
+        .isFalse();
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void assertThatCompatibilityEth64ForkIdIsNotEnabledByDefault() {
+    parseCommand();
+    verify(mockControllerBuilder)
+        .ethProtocolConfiguration(ethProtocolConfigurationArgumentCaptor.capture());
+    assertThat(ethProtocolConfigurationArgumentCaptor.getValue().isLegacyEth64ForkIdEnabled())
+        .isFalse();
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void assertThatCompatibilityEth64ForkIdIsPresentInHelpMessage() {
+    parseCommand("--help");
+    assertThat(commandOutput.toString())
+        .contains(
+            "--compatibility-eth64-forkid-enabled",
+            "Enable the legacy Eth/64 fork id. (default: false)");
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void quorumInteropEnabledFailsWithoutGasPriceSet() throws IOException {
+    final Path genesisFile = createFakeGenesisFile(GENESIS_QUORUM_INTEROP_ENABLED);
+    parseCommand("--genesis-file", genesisFile.toString());
+    assertThat(commandErrorOutput.toString())
+        .contains(
+            "--min-gas-price must be set to zero if GoQuorum compatibility is enabled in the genesis config.");
+  }
+
+  @Test
+  public void quorumInteropEnabledFailsWithoutGasPriceSetToZero() throws IOException {
+    final Path genesisFile = createFakeGenesisFile(GENESIS_QUORUM_INTEROP_ENABLED);
+    parseCommand("--genesis-file", genesisFile.toString(), "--min-gas-price", "1");
+    assertThat(commandErrorOutput.toString())
+        .contains(
+            "--min-gas-price must be set to zero if GoQuorum compatibility is enabled in the genesis config.");
+  }
+
+  @Test
+  public void quorumInteropEnabledSucceedsWithGasPriceSetToZero() throws IOException {
+    final Path genesisFile = createFakeGenesisFile(GENESIS_QUORUM_INTEROP_ENABLED);
+    parseCommand("--genesis-file", genesisFile.toString(), "--min-gas-price", "0");
     assertThat(commandErrorOutput.toString()).isEmpty();
   }
 }
