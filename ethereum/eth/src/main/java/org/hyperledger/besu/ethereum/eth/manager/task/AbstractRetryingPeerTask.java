@@ -116,7 +116,7 @@ public abstract class AbstractRetryingPeerTask<T> extends AbstractEthTask<T> {
           () ->
               ethContext
                   .getScheduler()
-                  .timeout(waitTask, Duration.ofSeconds(5))
+                  .timeout(waitTask, Duration.ofSeconds(30))
                   .whenComplete((r, t) -> executeTaskTimed()));
       return;
     }

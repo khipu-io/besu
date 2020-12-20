@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
 public class EthScheduler {
   private static final Logger LOG = LogManager.getLogger();
 
-  private final Duration defaultTimeout = Duration.ofSeconds(5);
+  private final Duration defaultTimeout = Duration.ofSeconds(30);
   private final AtomicBoolean stopped = new AtomicBoolean(false);
   private final CountDownLatch shutdown = new CountDownLatch(1);
   private static final int TX_WORKER_CAPACITY = 1000000;
