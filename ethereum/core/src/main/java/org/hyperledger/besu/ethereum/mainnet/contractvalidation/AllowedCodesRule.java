@@ -39,11 +39,17 @@ public class AllowedCodesRule implements ContractValidationRule {
 
   @Override
   public boolean validate(final MessageFrame frame) {
-    final Bytes contractCode = frame.getOutputData();
     final long blockNumber = frame.getBlockHeader().getNumber();
+
+    final Set<Hash> allowedCodesForBlock = getAllowedCodesFor(blockNumber);
+    if (allowedCodesForBlock.isEmpty()) {
+      return true; // allow anything.
+    }
+
+    final Bytes contractCode = frame.getOutputData();
     final Hash codeHash = Hash.wrap(keccak256(contractCode));
 
-    if (getAllowedCodesFor(blockNumber).contains(codeHash)) {
+    if (allowedCodesForBlock.contains(codeHash)) {
       return true;
     } else {
       LOG.info(
